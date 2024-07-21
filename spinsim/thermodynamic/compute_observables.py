@@ -1,29 +1,8 @@
 import numpy as np
 import mpmath as mp
-import dask as dk
 from typing import Callable
 dtype = 'float64'
 boltz = 8.617333262e-5 #eV/K
-
-
-"""
-Wrapper para paralelizar el calculo de funciones de observables
-input:
-    - func (callable): Funcion a paralelizar
-    - temp (numpy array): Arreglo de temperaturas
-    - ee (numpy array): Arreglo con los valores de energia ordenados de menor a mayor
-    - proy (numpy array): Arreglo con las proyecciones de los estados sobre el operador
-    - pre (int): Entero positivo que indica la precision para calculos grandes
-    - parallel_params (dict):
-output:
-    - Lista con los valores del observable
-"""
-def parallel_wrapper(func: Callable, temp: np.array, ee: np.array, proy: np.array, pre:int ,parallel_params: dict) -> list:
-    pre_compute_values = [ dk.delayed(func)
-        (ee, proy, t, pre) for t in temp]
-    valores_finales = dk.compute( *pre_compute_values, scheduler=parallel_params['scheduler'], num_workers=parallel_params['num_workers'] )
-    return list(valores_finales)
-
 
 """
 Physical Quantities
@@ -143,12 +122,9 @@ input:
 output:
     - Valor del calor especifico en cada temperatura
 """
-def specific_heat_workflow(op: np.array, temp: np.array, pre: int, parallel_flag: bool, parallel_vars: dict) -> np.array:
+def specific_heat_workflow(op: np.array, temp: np.array, pre: int) -> np.array:
     ee = np.linalg.eigvalsh(op)
-    if parallel_flag:
-        return np.array( parallel_wrapper( specific_heat, temp, ee, None, pre, parallel_vars ) )
-    else:
-        return np.array( [ specific_heat(ee, None, t, pre) for t in temp ] )
+    return np.array( [ specific_heat(ee, None, t, pre) for t in temp ] )
 
 
 """ 
@@ -160,12 +136,9 @@ input:
 output:
     - Valor de la entropia en cada temperatura
 """
-def entropy_workflow(op: np.array, temp: np.array, pre: int, parallel_flag: bool, parallel_vars: dict) -> np.array:
+def entropy_workflow(op: np.array, temp: np.array, pre: int) -> np.array:
     ee = np.linalg.eigvalsh(op)
-    if parallel_flag:
-        return np.array( parallel_wrapper( entropy, temp, ee, None, pre, parallel_vars) )
-    else:
-        return np.array( [ entropy(ee, None, t, pre) for t in temp ] )
+    return np.array( [ entropy(ee, None, t, pre) for t in temp ] )
 
 
 """ 
@@ -178,12 +151,9 @@ input:
 output:
     - Arreglo de los valores esperados a diferentes temperaturas
 """
-def expected_value_workflow(op_base: np.array, operator: np.array, temp: np.array, pre: int, parallel_flag: bool, parallel_vars: dict) -> np.array:
+def expected_value_workflow(op_base: np.array, operator: np.array, temp: np.array, pre: int) -> np.array:
     ee, vv = np.linalg.eigh(op_base)
     proy = np.array( [ ((vv[:,k]).T.conj()).dot(operator).dot(vv[:,k]) for k in range(len(ee))] )
-    if parallel_flag:
-        return np.array( parallel_wrapper( valor_esperado, temp, ee, proy, pre, parallel_vars ) )
-    else:
-        return np.array( [ valor_esperado(ee, proy, t, pre) for t in temp ] )
+    return np.array( [ valor_esperado(ee, proy, t, pre) for t in temp ] )
 
 
