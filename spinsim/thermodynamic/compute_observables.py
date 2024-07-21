@@ -1,6 +1,5 @@
 import numpy as np
 import mpmath as mp
-from typing import Callable
 dtype = 'float64'
 boltz = 8.617333262e-5 #eV/K
 
@@ -101,59 +100,26 @@ input:
 output:
     - Valor del valor esperado de un operador a una temperatura dada
 """
-def valor_esperado(ee: np.array, proy: np.array, t: float, pre: int) -> float:
+def expected_value(ee: np.array, proy: np.array, t: float, pre: int) -> float:
     partition = prob_states(ee, t, pre)
     return np.sum( partition*proy, dtype=dtype )
 
 
-
-
-
 """
-WORKFLOWS
+Funcion para calcular la variacion de entropia entre dos puntos
+input:
+    - ee_initial (numpy array): Arreglo con los valores de energia del punto inicial
 """
-""" 
-Funcion que calcula el calor especifico para un conjunto de temperaturas
-input: 
-    - op (numpy array): Operador hermitiano al que se le quiere calcular el
-    calor especifico
-    - temp (numpy array): Arreglo con las temperaturas
-    - pre (int): Entero positivo que indica la precision para calculos grandes
-output:
-    - Valor del calor especifico en cada temperatura
-"""
-def specific_heat_workflow(op: np.array, temp: np.array, pre: int) -> np.array:
-    ee = np.linalg.eigvalsh(op)
-    return np.array( [ specific_heat(ee, None, t, pre) for t in temp ] )
+def isothermal_entropy_change(ee_initial: np.array, ee_final:np.array, t: float, pre: int) -> float:
+    partition_initial = prob_states(ee_initial, t, pre)
+    partition_final = prob_states(ee_final, t, pre)
 
+    thermal_initial = partition_initial*ee_initial
+    thermal_final = partition_final*ee_final
 
-""" 
-Funcion que calcula la entropia para un conjunto de temperaturas
-input: 
-    - op (numpy array): Operador hermitiano al que se le quiere calcular la entropia
-    - temp (numpy array): Arreglo con las temperaturas
-    - pre (int): Entero positivo que indica la precision para calculos grandes
-output:
-    - Valor de la entropia en cada temperatura
-"""
-def entropy_workflow(op: np.array, temp: np.array, pre: int) -> np.array:
-    ee = np.linalg.eigvalsh(op)
-    return np.array( [ entropy(ee, None, t, pre) for t in temp ] )
+    tmp_var1 = (thermal_initial -  thermal_final)/t
+    tmp_var2 = -boltz*( log_z_function(ee_final, t, pre) - log_z_function(ee_initial, t, pre) )
+    return tmp_var1 + tmp_var2
 
-
-""" 
-Funcion que calcula el valor esperado de un operador
-input: 
-    - op_base (numpy array): Operador hermitiano al que se le toman los valores y vectores propios
-    - operator (numpy array): Operador al que se le calcula el valor esperado
-    - temp (numpy array): Arreglo con las temperaturas
-    - pre (int): Entero positivo que indica la precision para calculos grandes
-output:
-    - Arreglo de los valores esperados a diferentes temperaturas
-"""
-def expected_value_workflow(op_base: np.array, operator: np.array, temp: np.array, pre: int) -> np.array:
-    ee, vv = np.linalg.eigh(op_base)
-    proy = np.array( [ ((vv[:,k]).T.conj()).dot(operator).dot(vv[:,k]) for k in range(len(ee))] )
-    return np.array( [ valor_esperado(ee, proy, t, pre) for t in temp ] )
 
 
