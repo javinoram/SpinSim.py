@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Hamiltonian tutorial &#8212; SpinSim.py  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="SpinSim Python Package" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="hamiltonian-tutorial">
+<h1>Hamiltonian tutorial<a class="headerlink" href="#hamiltonian-tutorial" title="Link to this heading">¶</a></h1>
+<p>The idea of this tutorial is ilustrate how to create a matrix represation of a hamiltonian using this package.
+As it’s expected, the hamiltonian that we consider are the one of spin models (the operators are the product of Pauli matrices of a given values of spin).</p>
+<section id="the-model">
+<h2>The Model<a class="headerlink" href="#the-model" title="Link to this heading">¶</a></h2>
+<p>Before we start using the package let introduce a example model (we will use it in all the tutorial). Let consider a triangle, this one is modeled as follow.</p>
+<div class="math notranslate nohighlight">
+\[\mathcal{H} = J_1S_0S_1 + J_2S_1S_2 + J_3S_0S_3\]</div>
+<p>The operator is defined as <span class="math notranslate nohighlight">\(S_{i} = (\sigma_{x,i}, \sigma_{y,i}, \sigma_{z,i})\)</span>, where the <span class="math notranslate nohighlight">\(\sigma_{i,j}\)</span> is the pauli matrices of a given spin in the site <span class="math notranslate nohighlight">\(i\)</span>.
+The product of this operators is a dot product, and the product in the resulting sum is a multiplication between the pauli matrices on different site. For example:</p>
+<div class="math notranslate nohighlight">
+\[\sigma_{x,0}\sigma_{x,1} = (\sigma_{x,0} \otimes \mathbf{I} \otimes \mathbf{I})(\mathbf{I} \otimes \sigma_{x,1} \otimes \mathbf{I})\]</div>
+<p>Its a simple matrix multiplication, but the pauli matrices are in different places.</p>
+</section>
+<section id="computing-the-paulices-matrices-of-any-spin">
+<h2>Computing the paulices matrices of any spin<a class="headerlink" href="#computing-the-paulices-matrices-of-any-spin" title="Link to this heading">¶</a></h2>
+<p>The next point is how we can create the matrices of any given spin, to do that, we use the following formulas. For each matrix we have the following
+restriction <span class="math notranslate nohighlight">\(1 \leq i \leq 2s + 1\)</span> and <span class="math notranslate nohighlight">\(1 \leq j \leq 2s + 1\)</span>, and s being the spin value.</p>
+<p>For the <span class="math notranslate nohighlight">\(\sigma_x\)</span> we have that each element of the matrix follows the next equation:</p>
+<div class="math notranslate nohighlight">
+\[(S_x)_{i,j} = 0.5( \delta_{i,j+1} + \delta_{i+1,j} )\sqrt{ (s+1)(i+j-1) - ij }\]</div>
+<p>For the <span class="math notranslate nohighlight">\(\sigma_y\)</span> we have that each element of the matrix follows the next equation:</p>
+<div class="math notranslate nohighlight">
+\[(S_y)_{i,j} = 0.5i( \delta_{i,j+1} - \delta_{i+1,j} )\sqrt{ (s+1)(i+j-1) - ij }\]</div>
+<p>For the <span class="math notranslate nohighlight">\(\sigma_z\)</span> we have that each element of the matrix follows the next equation:</p>
+<div class="math notranslate nohighlight">
+\[(S_z)_{i,j} = (s + 1 - i)\delta_{i,j}\]</div>
+</section>
+<section id="important-elements">
+<h2>Important elements<a class="headerlink" href="#important-elements" title="Link to this heading">¶</a></h2>
+<p>Now that we know how some to compute some things, let list the important elements. The first one, we need to have a enumeration of the sites of the system to
+indicate the value of the spin of that site, so, we need to create a list with the values of the spin. The second one is a list of tuples that indicate
+which site is conected with other one (it’s important that the first index is lower or equal that the second one). And finally, a list with the values of the exchange.</p>
+<p>Taking the <span class="math notranslate nohighlight">\(\mathcal{H}\)</span> model, the three element should look as [0.5, 0.5, 0.5], [(0,1), (1,2), (0,2)] and [<span class="math notranslate nohighlight">\(J_1\)</span>, <span class="math notranslate nohighlight">\(J_2\)</span>, <span class="math notranslate nohighlight">\(J_3\)</span>].</p>
+</section>
+<section id="coding-part">
+<h2>Coding part<a class="headerlink" href="#coding-part" title="Link to this heading">¶</a></h2>
+<p>Now that we have the enough information, here you can find an example of how the code should looks like.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">spinsim.operators</span> <span class="kn">import</span> <span class="n">set_sij_vector</span>
+<span class="kn">from</span> <span class="nn">spinsim.hamiltonian</span> <span class="kn">import</span> <span class="n">construct_hamiltonian</span>
+
+<span class="n">indexs</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">]</span>
+<span class="n">exchanges</span> <span class="o">=</span> <span class="p">[</span><span class="n">J1</span><span class="p">,</span> <span class="n">J2</span><span class="p">,</span> <span class="n">J3</span><span class="p">]</span>
+<span class="n">spins</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span>
+
+<span class="n">SiSjvectors</span> <span class="o">=</span> <span class="n">set_sij_vector</span><span class="p">(</span><span class="n">indexs</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="n">terms</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">J</span><span class="p">,</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">exchanges</span><span class="p">,</span> <span class="n">SiSjvectors</span><span class="p">):</span>
+ <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span> <span class="p">[</span><span class="n">J</span><span class="p">,</span> <span class="n">op</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[</span><span class="n">J</span><span class="p">,</span> <span class="n">op</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="n">J</span><span class="p">,</span> <span class="n">op</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="p">]</span>
+
+<span class="n">H</span> <span class="o">=</span> <span class="n">construct_hamiltonian</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">spins</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After defining the basis elements (indexs, exchanges and spins) we use the <em>set_sij_vector()</em> to construct the set of vectors with the product <span class="math notranslate nohighlight">\(S_iS_j\)</span>,
+the list had a size equal to the list of indexs. After that we create the list where each term has a exchange asociated. Finally using <em>construct_hamiltonian()</em>
+we get the matrix representation of the system.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">SpinSim.py</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hamiltonian tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-model">The Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#computing-the-paulices-matrices-of-any-spin">Computing the paulices matrices of any spin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#important-elements">Important elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-part">Coding part</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">SpinSim Python Package</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Javier Norambuena Leiva.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/hamiltonian_tutorials.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
